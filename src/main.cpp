@@ -4,6 +4,8 @@
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow* window);
+void checkShader(unsigned int shader);
+void checkShaderProgram(unsigned int shaderProgram);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -55,17 +57,20 @@ int main() {
 	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
 	glCompileShader(vertexShader);
+	checkShader(vertexShader);
 
 	// fragment shader
 	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
 	glCompileShader(fragmentShader);
+	checkShader(fragmentShader);
 
 	// shader program
 	unsigned int shaderProgram = glCreateProgram();
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
 	glLinkProgram(shaderProgram);
+	checkShaderProgram(shaderProgram);
 	// delete shaders already in use
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
@@ -125,5 +130,27 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
+	}
+}
+
+void checkShader(unsigned int shader) {
+	static int success;
+	static char log[512];
+
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+	if (!success) {
+		glGetShaderInfoLog(shader, 512, NULL, log);
+		std::cout << "Error: " << log << "\n";
+	}
+}
+
+void checkShaderProgram(unsigned int shaderProgram) {
+	static int success;
+	static char log[512];
+
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+	if (!success) {
+		glGetProgramInfoLog(shaderProgram, 512, NULL, log);
+		std::cout << "Error: " << log << "\n";
 	}
 }
