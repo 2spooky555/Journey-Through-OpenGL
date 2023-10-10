@@ -2,6 +2,8 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
+#include <cmath>
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void checkShader(unsigned int shader);
@@ -24,18 +26,19 @@ unsigned int indices[] = {
 	0, 2, 3,
 };
 
-const char* vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "	gl_Position = vec4(aPos, 1.0);\n"
-    "}\0";
+const char* vertexShaderSource = ""
+	"#version 330 core\n"
+	"layout (location = 0) in vec3 aPos;\n"
+	"void main() {\n"
+	"	gl_Position = vec4(aPos, 1.0f);\n"
+	"}\0";
 	
-const char* fragmentShaderSource = "#version 330 core\n"
+const char* fragmentShaderSource = ""
+	"#version 330 core\n"
     "out vec4 fragColor;\n"
-    "void main()\n"
-    "{\n"
-    "	fragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+	"uniform vec4 vertexColor;"
+    "void main() {\n"
+    "	fragColor = vertexColor;\n"
     "}\0";
 
 
@@ -124,6 +127,13 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(shaderProgram);
+
+		// update uniform
+		float time = glfwGetTime();
+		float green = (sin(time) / 2.0f) + 5.0f;
+		int vertexColorLocation = glGetUniformLocation(shaderProgram, "vertexColor");
+		glUniform4f(vertexColorLocation, 0.0f, green, 0.0f, 1.0f);
+		// send data to vertex array
 		glBindVertexArray(VAO);
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
