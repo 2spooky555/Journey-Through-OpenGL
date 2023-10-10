@@ -1,8 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-
-#include <cmath>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -12,30 +12,39 @@ void checkShaderProgram(unsigned int shaderProgram);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// NDC vertices
 float vertices[] = {
-	// vertices  		colors
-	0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-	0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
+	// vertices  		colors             texture coords
+	0.5f, 0.5f, 0.0f,	1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
+	0.5f, -0.5f, 0.0f,	0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
+	-0.5f, -0.5f, 0.0f,	0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+	-0.5f, 0.5f, 0.0f,	1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+};
+unsigned int indices[] = {
+	0, 1, 3,
+	1, 2, 3,
 };
 
 const char* vertexShaderSource = ""
 	"#version 330 core\n"
 	"layout (location = 0) in vec3 aPos;\n"
 	"layout (location = 1) in vec3 aColor;\n"
+	"layout (location = 2) in vec2 aTextCoord;\n"
 	"out vec3 ourColor;\n"
+	"out vec2 textCoord;\n"
 	"void main() {\n"
 	"	gl_Position = vec4(aPos, 1.0f);\n"
 	"	ourColor = aColor;\n"
+	"	textCoord = aTextCoord;\n"
 	"}\0";
 	
 const char* fragmentShaderSource = ""
 	"#version 330 core\n"
     "out vec4 fragColor;\n"
 	"in vec3 ourColor;\n"
+	"in vec2 textCoord;\n"
+	"uniform sampler2D texture1;\n"
     "void main() {\n"
-    "	fragColor = vec4(ourColor, 1.0f);\n"
+    "	fragColor = texture(texture1, textCoord);\n"
     "}\0";
 
 
@@ -89,31 +98,58 @@ int main() {
 	// vertex buffer object
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
+	// element buffer object
+	unsigned int EBO;
+	glGenBuffers(1, &EBO);
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	/*
-		Params
-		1) which vertex attribute configure (location in vertex shader)
-		2) The number of componentsper vertex
-		3) the data type of the vertices
-		4) If we want normalized data, which is used for integers
-		5) the stride, the space between each vertex (in this case, it is 12 bytes)
-		6) The offset of where the position data begins
-	*/
-	// see images/vertex_buffer.png
-	// see images/vertex_buffer_with_multiple_attributes.png
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
 	// position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	// color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+	// texture coords
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
-	//glBindVertexArray(0);
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	// loading a texture
+	stbi_set_flip_vertically_on_load(true);
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	int width;
+	int height;
+	int nrChannels;
+	unsigned char* data = stbi_load("../images/face.png", &width, &height, &nrChannels, 0);
+	if (!data) {
+		std::cout << "Failed to load image!\n";
+	}
+	/*
+		Parameters:
+		1) Specify texture setting
+		2) Specify minimap level if you want to make them manually
+		3) Color image format
+		4) texture width
+		5) texture height
+		6) Always be 0!(legacy reasons)
+		7) Color format
+		8) Datatype of source image
+		9) image data
+	*/
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	stbi_image_free(data);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -123,24 +159,24 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		// bind texture, then use shader
+		glBindTexture(GL_TEXTURE_2D, texture);
 		glUseProgram(shaderProgram);
-
-		// send data to vertex array
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		//glBindVertexArray(0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 	}
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
 	glfwTerminate();
 	return 0;
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 

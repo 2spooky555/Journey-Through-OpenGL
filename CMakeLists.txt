@@ -58,7 +58,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_directories(${PROJECT_NAME} 
 	PRIVATE ${GLFW_ROOT_DIR}/src
-	PRIVATE ${GLAD_ROOT_DIR}/src}
+	PRIVATE ${GLAD_ROOT_DIR}/src
 )
 
 # Add the Libs to the Linker for the Project
