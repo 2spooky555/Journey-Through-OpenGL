@@ -3,29 +3,24 @@
 #include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+//#include "../external/glm/glm.hpp"
+//#include "../external/glm/gtc/matrix_transform.hpp"
+#include "../external/glm/gtc/type_ptr.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void checkShader(unsigned int shader);
 void checkShaderProgram(unsigned int shaderProgram);
-void GLAPIENTRY messageCallback(
-	GLenum source, 
-	GLenum type, 
-	GLuint id, 
-	GLenum severity, 
-	GLsizei length,
-	const GLchar* message,
-	const void* userParam);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 float vertices[] = {
-	// vertices  		colors             texture coords
-	0.5f, 0.5f, 0.0f,	1.0f, 0.0f, 0.0f,  1.0f, 1.0f,
-	0.5f, -0.5f, 0.0f,	0.0f, 1.0f, 0.0f,  1.0f, 0.0f,
-	-0.5f, -0.5f, 0.0f,	0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
-	-0.5f, 0.5f, 0.0f,	1.0f, 1.0f, 0.0f,  0.0f, 1.0f,
+	// vertices  		texture coords
+	0.5f, 0.5f, 0.0f,	1.0f, 1.0f,
+	0.5f, -0.5f, 0.0f,	1.0f, 0.0f,
+	-0.5f, -0.5f, 0.0f,	0.0f, 0.0f,
+	-0.5f, 0.5f, 0.0f,	0.0f, 1.0f,
 };
 unsigned int indices[] = {
 	0, 1, 3,
@@ -35,20 +30,17 @@ unsigned int indices[] = {
 const char* vertexShaderSource = ""
 	"#version 330 core\n"
 	"layout (location = 0) in vec3 aPos;\n"
-	"layout (location = 1) in vec3 aColor;\n"
-	"layout (location = 2) in vec2 aTextCoord;\n"
-	"out vec3 ourColor;\n"
+	"layout (location = 1) in vec2 aTextCoord;\n"
 	"out vec2 textCoord;\n"
+	"uniform mat4 transform;\n"
 	"void main() {\n"
-	"	gl_Position = vec4(aPos, 1.0f);\n"
-	"	ourColor = aColor;\n"
+	"	gl_Position = transform * vec4(aPos, 1.0f);\n"
 	"	textCoord = aTextCoord;\n"
 	"}\0";
 	
 const char* fragmentShaderSource = ""
 	"#version 330 core\n"
     "out vec4 fragColor;\n"
-	"in vec3 ourColor;\n"
 	"in vec2 textCoord;\n"
 	"uniform sampler2D texture1;\n"
     "void main() {\n"
@@ -118,14 +110,11 @@ int main() {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	// color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
 	// texture coords
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	// loading a texture
 	stbi_set_flip_vertically_on_load(true);
@@ -143,18 +132,7 @@ int main() {
 	if (!data) {
 		std::cout << "Failed to load image!\n";
 	}
-	/*
-		Parameters:
-		1) Specify texture setting
-		2) Specify minimap level if you want to make them manually
-		3) Color image format
-		4) texture width
-		5) texture height
-		6) Always be 0!(legacy reasons)
-		7) Color format
-		8) Datatype of source image
-		9) image data
-	*/
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	stbi_image_free(data);
@@ -163,13 +141,20 @@ int main() {
 		glfwPollEvents();
 		processInput(window);
 		
-		// clear background
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// bind texture, then use shader
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glUseProgram(shaderProgram);
+		// send info to uniform, create transformation
+		float time = glfwGetTime();
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::rotate(trans, time, glm::vec3(0.0f, 0.0f, 1.0f));
+		trans = glm::scale(trans, glm::vec3(sin(time), sin(time), 0.0f));
+
+		unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -211,16 +196,3 @@ void checkShaderProgram(unsigned int shaderProgram) {
 	glGetProgramInfoLog(shaderProgram, 512, NULL, log);
 	std::cout << "Program log: " << log << "\n";
 }
-
-void GLAPIENTRY messageCallback(
-	GLenum source, 
-	GLenum type, 
-	GLuint id, 
-	GLenum severity, 
-	GLsizei length,
-	const GLchar* message,
-	const void* userParam) {
-	fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
-		type, severity, message);
-	}
