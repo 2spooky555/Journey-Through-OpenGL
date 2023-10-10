@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void checkShader(unsigned int shader);
 void checkShaderProgram(unsigned int shaderProgram);
@@ -10,31 +10,32 @@ void checkShaderProgram(unsigned int shaderProgram);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// NDC
+// NDC vertices
 float vertices[] = {
-	0.5f, 0.5f, 0.0f,
-	0.5f, -0.5f, 0.0f,
-	-0.5f, -0.5f, 0.0f,
-	-0.5f, 0.5, 0.0f,
+	0.5f, 0.0f, 0.0f,
+	0.0f, -0.5f, 0.0f,
+	0.0f, 0.5f, 0.0f,
+	-0.5f, 0.0f, 0.0f,
 };
 // for EBO
 unsigned int indices[] = {
-	0, 1, 3,
+    0, 1, 3,
 	1, 2, 3,
+	0, 2, 3,
 };
 
 const char* vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
     "void main()\n"
     "{\n"
-    "gl_Position = vec4(aPos, 1.0);\n"
+    "	gl_Position = vec4(aPos, 1.0);\n"
     "}\0";
 	
 const char* fragmentShaderSource = "#version 330 core\n"
     "out vec4 fragColor;\n"
     "void main()\n"
     "{\n"
-    "fragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+    "	fragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
     "}\0";
 
 
@@ -101,11 +102,11 @@ int main() {
 	/*
 		Params
 		1) which vertex attribute configure (location in vertex shader)
-		2) The number of vertices
+		2) The number of componentsper vertex
 		3) the data type of the vertices
 		4) If we want normalized data, which is used for integers
 		5) the stride, the space between each vertex (in this case, it is 12 bytes)
-		5) The offset of where the position data begins
+		6) The offset of where the position data begins
 	*/
 	// see images/vertex_buffer.png
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -125,7 +126,7 @@ int main() {
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
@@ -154,10 +155,8 @@ void checkShader(unsigned int shader) {
 	static char log[512];
 
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(shader, 512, NULL, log);
-		std::cout << "Error: " << log << "\n";
-	}
+	glGetShaderInfoLog(shader, 512, NULL, log);
+	std::cout << "Shader log: " << log << "\n";
 }
 
 void checkShaderProgram(unsigned int shaderProgram) {
@@ -165,8 +164,6 @@ void checkShaderProgram(unsigned int shaderProgram) {
 	static char log[512];
 
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, log);
-		std::cout << "Error: " << log << "\n";
-	}
+	glGetProgramInfoLog(shaderProgram, 512, NULL, log);
+	std::cout << "Program log: " << log << "\n";
 }
