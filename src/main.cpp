@@ -14,31 +14,28 @@ const unsigned int SCR_HEIGHT = 600;
 
 // NDC vertices
 float vertices[] = {
-	0.5f, 0.0f, 0.0f,
-	0.0f, -0.5f, 0.0f,
-	0.0f, 0.5f, 0.0f,
-	-0.5f, 0.0f, 0.0f,
-};
-// for EBO
-unsigned int indices[] = {
-    0, 1, 3,
-	1, 2, 3,
-	0, 2, 3,
+	// vertices  		colors
+	0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+	0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
 };
 
 const char* vertexShaderSource = ""
 	"#version 330 core\n"
 	"layout (location = 0) in vec3 aPos;\n"
+	"layout (location = 1) in vec3 aColor;\n"
+	"out vec3 ourColor;\n"
 	"void main() {\n"
 	"	gl_Position = vec4(aPos, 1.0f);\n"
+	"	ourColor = aColor;\n"
 	"}\0";
 	
 const char* fragmentShaderSource = ""
 	"#version 330 core\n"
     "out vec4 fragColor;\n"
-	"uniform vec4 vertexColor;"
+	"in vec3 ourColor;\n"
     "void main() {\n"
-    "	fragColor = vertexColor;\n"
+    "	fragColor = vec4(ourColor, 1.0f);\n"
     "}\0";
 
 
@@ -97,11 +94,6 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// element buffer object
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	/*
 		Params
 		1) which vertex attribute configure (location in vertex shader)
@@ -112,11 +104,16 @@ int main() {
 		6) The offset of where the position data begins
 	*/
 	// see images/vertex_buffer.png
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	// see images/vertex_buffer_with_multiple_attributes.png
+	// position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+	// color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindVertexArray(0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
@@ -128,23 +125,16 @@ int main() {
 
 		glUseProgram(shaderProgram);
 
-		// update uniform
-		float time = glfwGetTime();
-		float green = (sin(time) / 2.0f) + 0.5f;
-		int vertexColorLocation = glGetUniformLocation(shaderProgram, "vertexColor");
-		glUniform4f(vertexColorLocation, 0.0f, green, 0.0f, 1.0f);
 		// send data to vertex array
 		glBindVertexArray(VAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
-		glDrawElements(GL_TRIANGLES, 9, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//glBindVertexArray(0);
 
 		glfwSwapBuffers(window);
 	}
 
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
-	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
 	glfwTerminate();
 	return 0;
