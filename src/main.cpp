@@ -8,6 +8,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void checkShader(unsigned int shader);
 void checkShaderProgram(unsigned int shaderProgram);
+void GLAPIENTRY messageCallback(
+	GLenum source, 
+	GLenum type, 
+	GLuint id, 
+	GLenum severity, 
+	GLsizei length,
+	const GLchar* message,
+	const void* userParam);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -126,7 +134,7 @@ int main() {
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	int width;
 	int height;
@@ -147,7 +155,7 @@ int main() {
 		8) Datatype of source image
 		9) image data
 	*/
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 	stbi_image_free(data);
 
@@ -203,3 +211,16 @@ void checkShaderProgram(unsigned int shaderProgram) {
 	glGetProgramInfoLog(shaderProgram, 512, NULL, log);
 	std::cout << "Program log: " << log << "\n";
 }
+
+void GLAPIENTRY messageCallback(
+	GLenum source, 
+	GLenum type, 
+	GLuint id, 
+	GLenum severity, 
+	GLsizei length,
+	const GLchar* message,
+	const void* userParam) {
+	fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+		(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+		type, severity, message);
+	}
