@@ -130,7 +130,7 @@ int main() {
 
 		// update uniform
 		float time = glfwGetTime();
-		float green = (sin(time) / 2.0f) + 5.0f;
+		float green = (sin(time) / 2.0f) + 0.5f;
 		int vertexColorLocation = glGetUniformLocation(shaderProgram, "vertexColor");
 		glUniform4f(vertexColorLocation, 0.0f, green, 0.0f, 1.0f);
 		// send data to vertex array
