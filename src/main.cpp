@@ -32,9 +32,11 @@ const char* vertexShaderSource = ""
 	"layout (location = 0) in vec3 aPos;\n"
 	"layout (location = 1) in vec2 aTextCoord;\n"
 	"out vec2 textCoord;\n"
-	"uniform mat4 transform;\n"
+	"uniform mat4 model;\n"
+	"uniform mat4 view;\n"
+	"uniform mat4 projection;\n"
 	"void main() {\n"
-	"	gl_Position = transform * vec4(aPos, 1.0f);\n"
+	"	gl_Position = projection * view * model * vec4(aPos, 1.0f);\n"
 	"	textCoord = aTextCoord;\n"
 	"}\0";
 	
@@ -46,7 +48,6 @@ const char* fragmentShaderSource = ""
     "void main() {\n"
     "	fragColor = texture(texture1, textCoord);\n"
     "}\0";
-
 
 int main() {
 	glfwInit();
@@ -146,14 +147,25 @@ int main() {
 
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glUseProgram(shaderProgram);
-		// send info to uniform, create transformation
-		float time = glfwGetTime();
-		glm::mat4 trans = glm::mat4(1.0f);
-		trans = glm::rotate(trans, time, glm::vec3(0.0f, 0.0f, 1.0f));
-		trans = glm::scale(trans, glm::vec3(sin(time), sin(time), 0.0f));
-
-		unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
-		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+		// time to go 3d!
+		float time = (float)glfwGetTime();
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::rotate(model, sin(time*5.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+		glm::mat4 view = glm::mat4(1.0f);
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, (-3.0f * sin(time)) - 4.0f));
+		glm::mat4 projection = glm::perspective(
+			glm::radians(45.0f), 
+			(float)SCR_WIDTH/(float)SCR_HEIGHT, 
+			0.1f,
+			100.0f
+		);
+		// assign uniforms
+		int modelLoc = glGetUniformLocation(shaderProgram, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		int viewLoc = glGetUniformLocation(shaderProgram, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
